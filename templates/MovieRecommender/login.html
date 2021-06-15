@@ -1,0 +1,31 @@
+{% extends 'MovieRecommender/base.html' %}
+{% block title %}Login{% endblock title %}
+{% block css %}
+body{
+    background: -webkit-linear-gradient(left, #3931af, #00c6ff);
+}
+{% endblock css %}
+{% block content %}
+<div class="container p-5 mb-5">
+<form action="" method="post" novalidate>
+{% csrf_token %}
+{% if form.non_field_errors %}
+{% for error in form.non_field_errors %}
+<div class="alert alert-danger">{{error}}</div>
+{% endfor %}
+{% endif %} <br>
+{% for fm in  form %}
+<span class="text-light">{{fm.label_tag}}</span>
+<p>
+{{fm}}
+</p>
+{% if fm.errors  %}
+<div class="alert alert-danger">
+{{fm.errors|striptags}}
+</div>
+{% endif %}
+{% endfor %} <br>
+<input type="submit" value="Login" class="btn btn-primary"><br>
+</form>
+</div>
+{% endblock content %}

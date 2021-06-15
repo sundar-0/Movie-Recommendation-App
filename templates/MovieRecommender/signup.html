@@ -1,0 +1,42 @@
+{% extends 'MovieRecommender/base.html' %}
+{% block title %}Signup{% endblock title %}
+{% block css %}
+body{
+    background: -webkit-linear-gradient(left, #3931af, #00c6ff);
+}
+.wrapper{
+        margin-bottom:200px;
+}
+
+{% endblock css %}
+{% block content %}
+
+<div class="container p-5 mb-5 wrapper">
+     {% if messages %}
+                {%for msg in messages%}
+                {% if msg %}   <div class="alert alert-{{msg.tags}} alert-dismissible fade show font-weight-bold text-primary w-50 ml-3 mt-5">{{msg}} <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button></div>{% endif %}
+        {%endfor%}
+        {% endif %}
+
+<form action="" method="post" novalidate>
+{% csrf_token %}
+{% for fm in form %}
+<span class="text-light">{{fm.label_tag}}</span>
+<div class="form-group">
+{{fm}}
+</div>
+{% if fm.errors %}
+<div class="alert alert-danger lert-dismissible fade show">
+{{fm.errors|striptags}}
+<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+
+</div>
+{% endif %}
+{% endfor %}<br/>
+  <input type="submit" value="submit" class="btn btn-primary">
+</form>
+</div>
+{% endblock content %}

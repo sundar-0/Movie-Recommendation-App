@@ -1,0 +1,219 @@
+{% extends 'MovieRecommender/base.html' %}
+{% block title %}Dashboard{% endblock title %}
+{% block css %}
+         body{
+                background: -webkit-linear-gradient(left, #3931af, #00c6ff);
+            }
+          .col-md-3
+          {
+          display: inline-block;
+          margin-left:-4px;
+          }
+
+          .carousel-indicators .active {
+          background-color: blue;
+            }
+
+          .col-md-3 img{
+
+          width: 170px;
+          height: 200px;
+          }
+
+          body .carousel-indicator li{
+          background-color: blue;
+          }
+
+          body .carousel-indicators{
+          bottom: 0;
+          }
+
+          body .carousel-control-prev-icon,
+          body .carousel-control-next-icon{
+          background-color: blue;
+          }
+
+          .carousel-control-prev,
+          .carousel-control-next{
+          top: auto;
+          bottom: auto;
+          padding-top: 222px;
+          }
+        body .no-padding{
+           padding-left: 0,
+           padding-right: 0;
+           }
+
+        .wrapper{
+
+        margin-bottom:200px;
+        }
+
+
+ {% endblock %}
+
+{% block content %}
+<div class="container wrapper">
+     {% if messages %}
+                {%for msg in messages%}
+                {% if msg %}   <div class="alert alert-{{msg.tags}} alert-dismissible fade show font-weight-bold text-primary w-50 ml-3 mt-5">{{msg}} <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button></div>{% endif %}
+                {%endfor%}
+                {% endif %}
+
+    <!--Slideshow starts here -->
+    {% for movie, range, nSlides in allMovies %}
+    <h5 class="my-4 text-light"><u>{{movie.0.genres}}</u></h5>
+<div class="row">
+    <div id="demo{{forloop.counter}}" class="col carousel slide my-3" data-ride="carousel">
+    <ul class="carousel-indicators">
+      <li data-target="#demo{{forloop.counter}}" data-slide-to="0" class="active"></li>
+
+       {% for i in range %}
+      <li data-target="#demo{{forloop.parentloop.counter}}" data-slide-to="{{i}}" ></li>
+      {% endfor %}
+    </ul>
+
+
+    <div class="container carousel-inner no-padding">
+
+      <div class="carousel-item active">
+        <div class="col-xs-3 col-sm-3 col-md-3">
+
+
+          <div class="card" style="width: 18rem">
+             <img class="card-img-top" src="{{movie.0.image.url}}"  alt="Card image cap" height="250px" width="200px">    
+                      <div class="card-body">
+                        <h5 class="card-title">{{movie.0.title}}</h5>
+                         <form action="" method="post" class="range-field">
+                                                                        {% csrf_token %}  
+                                                                        <input type="hidden" name="movieid" value="{{movie.0.id}}"/>
+                                                                        <input type="hidden" name="userid" value="{{user.id}}"/> 
+                                                                        {{rform.as_p}}
+                                                                        <div class="showrating">
+                                                                        
+                                                                        </div>
+                                                                        <input type="submit" class="btn btn-primary" value="Submit">
+                        </form>
+                      </div>       
+                      <div class="card-footer">
+                        <small class="text-muted">{{movie.0.genres}}</small>
+                        <small class="text-muted">{{movie.0.movieduration}}</small>
+                     </div>
+          </div>
+       </div>
+
+
+        {% for i in movie|slice:"1:"%}
+        <div class="col-xs-3 col-sm-3 col-md-3">
+         <div class="card" style="width: 18rem">
+             <img class="card-img-top" src="{{i.image.url}}"  alt="Card image cap" height="250px" width="200px">    
+                      <div class="card-body">
+                        <h5 class="card-title">{{i.title}}</h5>
+                         <form action="" method="post" class="range-field">
+                                                                        {% csrf_token %}  
+                                                                        <input type="hidden" name="movieid" value="{{i.id}}"/>
+                                                                        <input type="hidden" name="userid" value="{{user.id}}"/> 
+                                                                        {{rform.as_p}}
+                                                                        <div class="showrating">
+                                                                        
+                                                                        </div>
+                                                                        <input type="submit" class="btn btn-primary" value="Submit">
+                        </form>
+                      </div>       
+                      <div class="card-footer">
+                        <small class="text-muted">{{i.genres}}</small>
+                        <small class="text-muted">{{i.movieduration}}</small>
+                     </div>
+          </div>
+        </div>
+        {% if forloop.counter|divisibleby:4 and forloop.counter > 0 and not forloop.last %}
+      </div><div class="carousel-item">
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+
+
+</div>
+</div>
+    <!-- left and right controls for the slide -->
+    <a class="carousel-control-prev" href="#demo{{forloop.counter}}" data-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+    </a>
+    <a class="carousel-control-next" href="#demo{{forloop.counter}}" data-slide="next">
+        <span class="carousel-control-next-icon"></span>
+    </a>
+        </div>
+    {% endfor %}
+</div>
+ {% endblock %}
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

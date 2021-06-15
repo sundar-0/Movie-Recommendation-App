@@ -1,0 +1,157 @@
+ print(rating)
+    x=[],y=[],A=[],B=[],C=[],D=[]
+    #Movie Data Frames
+    for item in movie:
+        x=[item.id,item.title,item.movieduration,item.image.url,item.genres] 
+        y+=[x]
+    movies_df = pd.DataFrame(y,columns=['movieId','title','movieduration','image','genres'])
+    print("Movies DataFrame")
+    print(movies_df)
+    print(movies_df.dtypes)
+    #Rating Data Frames
+    for item in rating:
+        A=[item.user,item.movie,item.rating]
+        B+=[A]
+    rating_df=pd.DataFrame(B,columns=['userId','movieId','rating'])
+    print("Rating data Frame")
+    rating_df['userId']=rating_df['userId'].astype(str).astype(np.int64)
+    rating_df['movieId']=rating_df['movieId'].astype(str).astype(np.int64)
+    rating_df['rating']=rating_df['rating'].astype(str).astype(np.float)
+    print(rating_df)
+    print(rating_df.dtypes)
+    if request.user.is_authenticated:
+        userid=request.user.id
+        #select related is join statement in django.It looks for foreign key and join the table
+        userInput=Rating.objects.select_related('movie').filter(user=userid)
+        if userInput.count()== 0:
+            recommenderQuery=None
+            userInput=None
+        else:
+            for item in userInput:
+                C=[item.movie.title,item.rating]
+                D+=[C]
+            inputMovies=pd.DataFrame(D,columns=['title','rating'])
+            print("Watched Movies by user dataframe")
+            inputMovies['rating']=inputMovies['rating'].astype(str).astype(np.float)
+            print(inputMovies.dtypes)
+
+            #Filtering out the movies by title
+            inputId = movies_df[movies_df['title'].isin(inputMovies['title'].tolist())]
+            #Then merging it so we can get the movieId. It's implicitly merging it by title.
+            inputMovies = pd.merge(inputId, inputMovies)
+            # #Dropping information we won't use from the input dataframe
+            # inputMovies = inputMovies.drop('year', 1)
+            #Final input dataframe
+            #If a movie you added in above isn't here, then it might not be in the original 
+            #dataframe or it might spelled differently, please check capitalisation.
+            print(inputMovies)
+
+            #Filtering out users that have watched movies that the input has watched and storing it
+            userSubset = rating_df[rating_df['movieId'].isin(inputMovies['movieId'].tolist())]
+            print(userSubset.head())
+
+            #Groupby creates several sub dataframes where they all have the same value in the column specified as the parameter
+            userSubsetGroup = userSubset.groupby(['userId'])
+            
+            #print(userSubsetGroup.get_group(7))
+
+            #Sorting it so users with movie most in common with the input will have priority
+            userSubsetGroup = sorted(userSubsetGroup,  key=lambda x: len(x[1]), reverse=True)
+
+            print(userSubsetGroup[0:])
+
+
+            userSubsetGroup = userSubsetGroup[0:]
+
+
+            #Store the Pearson Correlation in a dictionary, where the key is the user Id and the value is the coefficient
+            pearsonCorrelationDict = {}
+
+        #For every user group in our subset
+            for name, group in userSubsetGroup:
+            #Let's start by sorting the input and current user group so the values aren't mixed up later on
+                group = group.sort_values(by='movieId')
+                inputMovies = inputMovies.sort_values(by='movieId')
+                #Get the N for the formula
+                nRatings = len(group)
+                #Get the review scores for the movies that they both have in common
+                temp_df = inputMovies[inputMovies['movieId'].isin(group['movieId'].tolist())]
+                #And then store them in a temporary buffer variable in a list format to facilitate future calculations
+                tempRatingList = temp_df['rating'].tolist()
+                #Let's also put the current user group reviews in a list format
+                tempGroupList = group['rating'].tolist()
+                #Now let's calculate the pearson correlation between two users, so called, x and y
+                Sxx = sum([i**2 for i in tempRatingList]) - pow(sum(tempRatingList),2)/float(nRatings)
+                Syy = sum([i**2 for i in tempGroupList]) - pow(sum(tempGroupList),2)/float(nRatings)
+                Sxy = sum( i*j for i, j in zip(tempRatingList, tempGroupList)) - sum(tempRatingList)*sum(tempGroupList)/float(nRatings)
+                
+                #If the denominator is different than zero, then divide, else, 0 correlation.
+                if Sxx != 0 and Syy != 0:
+                    pearsonCorrelationDict[name] = Sxy/sqrt(Sxx*Syy)
+                else:
+                    pearsonCorrelationDict[name] = 0
+
+            print(pearsonCorrelationDict.items())
+
+            pearsonDF = pd.DataFrame.from_dict(pearsonCorrelationDict, orient='index')
+            pearsonDF.columns = ['similarityIndex']
+            pearsonDF['userId'] = pearsonDF.index
+            pearsonDF.index = range(len(pearsonDF))
+            print(pearsonDF.head())
+
+            topUsers=pearsonDF.sort_values(by='similarityIndex', ascending=False)[0:]
+            print(topUsers.head())
+
+            topUsersRating=topUsers.merge(rating_df, left_on='userId', right_on='userId', how='inner')
+            topUsersRating.head()
+
+                #Multiplies the similarity by the user's ratings
+            topUsersRating['weightedRating'] = topUsersRating['similarityIndex']*topUsersRating['rating']
+            topUsersRating.head()
+
+
+            #Applies a sum to the topUsers after grouping it up by userId
+            tempTopUsersRating = topUsersRating.groupby('movieId').sum()[['similarityIndex','weightedRating']]
+            tempTopUsersRating.columns = ['sum_similarityIndex','sum_weightedRating']
+            tempTopUsersRating.head()
+
+            #Creates an empty dataframe
+            recommendation_df = pd.DataFrame()
+            #Now we take the weighted average
+            recommendation_df['weighted average recommendation score'] = tempTopUsersRating['sum_weightedRating']/tempTopUsersRating['sum_similarityIndex']
+            recommendation_df['movieId'] = tempTopUsersRating.index
+            recommendation_df.head()
+
+            recommendation_df = recommendation_df.sort_values(by='weighted average recommendation score', ascending=False)
+            print(recommendation_df.head)
+            recommender=movies_df.loc[movies_df['movieId'].isin(recommendation_df.head(10)['movieId'].tolist())]
+            print(recommender)
+            recommended_movie=recommender.to_dict() 
+            print(recommended_movie)
+            
+            # Lets make list of object
+            recommenderQuery=[
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            {'movieId':'','image':'','movieduration':'','title':'','genres':''},
+            ]
+            for i in range(1,11):
+                if i == 8:
+                    pass
+                else:
+                    recommenderQuery[i-1]['movieId']=recommended_movie['movieId'][i]
+                    recommenderQuery[i-1]['image']=recommended_movie['image'][i]
+                    recommenderQuery[i-1]['title']=recommended_movie['title'][i]
+                    recommenderQuery[i-1]['movieduration']=recommended_movie['movieduration'][i]
+                    recommenderQuery[i-1]['genres']=recommended_movie['genres'][i]
+            print(recommenderQuery)
+    else:
+        recommenderQuery=None
+        userInput=None

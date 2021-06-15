@@ -1,0 +1,30 @@
+{% extends 'MovieRecommender/base.html' %}
+{% block title %}Add Movie{% endblock title %}
+{% block css %}
+body{
+    background: -webkit-linear-gradient(left, #3931af, #00c6ff);
+}
+{% endblock css %}
+{%block content%}
+ {%if perms.MovieRecommender.add_movie%}
+<div class="container  mt-2 p-5 mb-2">
+<h1 class="text-center text-light">Add Movie</h1>  
+  <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for fm in form  %}
+        <span class="text-light font-weight-bold">{{fm.label_tag}}</span>
+        <p>{{fm}}</p>
+        {% endfor %}
+        <input type="submit" class="btn btn-primary" value="Add">
+        </form><br>
+        {% if messages %}
+        {%for msg in messages%}
+        {% if msg %}   <div class="alert alert-success">{{msg}}</div>{% endif %}
+        {%endfor%}
+        {% endif %}
+</form>
+</div>
+{% else %}
+<h1 class="text-light mt-2 ml-2">Only Admin has Permission To Add Movie</h1>
+{% endif %}
+{%endblock content%} 
